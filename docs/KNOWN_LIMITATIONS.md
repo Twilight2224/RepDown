@@ -1,0 +1,8 @@
+# Known limitations and honest delivery boundaries
+
+- The native Android APK was not built in this environment. Java 21 is available, but Android SDK Platform 36 and the Gradle wrapper distribution are unavailable; an outbound download attempt failed because the host could not resolve `services.gradle.org`. Therefore no native install, emulator run, or Android instrumentation test was executed here.
+- The native app includes bidirectional study controls and a CSV bridge for laptop editing. The CSV bridge merges cards by stable ID (or German text when no matching ID exists) and keeps existing review schedules unless a schedule is supplied in the CSV. CSV import does not delete cards absent from the file.
+- The standalone `RepDawn.html` is an offline browser app. It stores cards in browser local storage on each device. Browser file-origin storage behavior can vary by browser, so export backups regularly and keep using the same browser profile/file location.
+- No automatic cloud sync is active. The existing Supabase schema is only a starting point; the mobile sync adapter, auth flow, conflict resolution, and owner credentials must be configured before online cross-device sync can be claimed.
+- The scheduler in the Android source is FSRS-inspired local logic, not a certified upstream FSRS implementation. The browser app uses a transparent local interval multiplier. Neither claims parity with the upstream FSRS algorithm.
+- The native project contains additional screens/data models for folders, trash, cached practice, and mixture queue; optional AI generation and cloud services are not active in this build.

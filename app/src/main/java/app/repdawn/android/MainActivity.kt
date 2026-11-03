@@ -206,7 +206,7 @@ private fun Folders(vm: AppViewModel, add: () -> Unit) {
 @Composable private fun Settings(vm: AppViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { it?.let { vm.exportBackup(context.contentResolver, it) } }
-    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { vm.importBackup(context.contentResolver, it) } }
+    val importZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { vm.importBackup(context.contentResolver, it) } }
     val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { it?.let { vm.exportCsv(context.contentResolver, it) } }
     val importCsv = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { vm.importCsv(context.contentResolver, it) } }
     Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -215,9 +215,9 @@ private fun Folders(vm: AppViewModel, add: () -> Unit) {
         Text("Full backup (cards + review history)", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { export.launch("repdawn-backup.zip") }) { Text("Export ZIP") }
-            OutlinedButton(onClick = { import.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("Import ZIP") }
+            OutlinedButton(onClick = { importZip.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("Import ZIP") }
         }
-        Divider()
+        HorizontalDivider()
         Text("Laptop transfer (vocabulary CSV)", style = MaterialTheme.typography.titleMedium)
         Text("Export the CSV to edit vocabulary on your laptop. Import the edited CSV here to merge your changes. Existing cards keep their IDs and repetition schedules when possible.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

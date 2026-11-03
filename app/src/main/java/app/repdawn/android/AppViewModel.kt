@@ -36,7 +36,7 @@ class AppViewModel(context: Context) : ViewModel() {
     fun save(draft: CardDraft, id: String? = null, done: (() -> Unit)? = null) = viewModelScope.launch { runCatching { repo.save(draft, id) }.onSuccess { _notice.value = "Card saved locally."; done?.invoke() }.onFailure { _notice.value = it.message ?: "Could not save card." } }
     fun grade(grade: Grade) = viewModelScope.launch { val card = current.value ?: return@launch; runCatching { repo.grade(card.id, grade) }.onSuccess { _notice.value = "Scheduled for ${relative(it.dueAt)}."; loadStudy() }.onFailure { _notice.value = it.message ?: "Review was not saved." } }
     fun custom(minutes: Long) = viewModelScope.launch { val card = current.value ?: return@launch; if (minutes < 1) { _notice.value = "Custom interval must be at least one minute."; return@launch }; repo.customGrade(card.id, minutes * 60_000); loadStudy() }
-    fun undo() = viewModelScope.launch { current.value?.let { if (repo.undoLast(it.id)) _notice.value = "Last review undone." else _notice.value = "Nothing to undo." } }
+    fun undo() = viewModelScope.launch { val card = current.value ?: return@launch; _notice.value = if (repo.undoLast(card.id)) "Last review undone." else "Nothing to undo." }
     fun trash(id: String) = viewModelScope.launch { repo.trash(listOf(id)); _notice.value = "Moved to Trash." }
     fun restore(id: String) = viewModelScope.launch { repo.restore(listOf(id)); _notice.value = "Restored." }
     fun permanent(id: String) = viewModelScope.launch { repo.permanentDelete(id); _notice.value = "Permanently deleted." }

@@ -10,6 +10,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Database(entities = [FolderEntity::class, CardEntity::class, TagEntity::class, CardTagEntity::class, SchedulingEntity::class, ReviewLogEntity::class, GeneratedSentenceEntity::class, SentenceCardLinkEntity::class, IdiomEntity::class, IdiomReviewEntity::class, MixtureWordEntity::class, GenerationJobEntity::class, SyncOutboxEntity::class, TombstoneEntity::class, AppSettingEntity::class], version = 1, exportSchema = true)
@@ -30,14 +31,14 @@ interface RepDawnDao {
     @Query("SELECT * FROM scheduling WHERE cardId = :cardId") fun observeSchedule(cardId: String): Flow<SchedulingEntity?>
     @Query("SELECT COUNT(*) FROM cards c JOIN scheduling s ON c.id=s.cardId WHERE c.deletedAt IS NULL AND s.dueAt <= :now") fun dueCount(now: Long): Flow<Int>
     @Query("SELECT * FROM cards WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC") fun trash(): Flow<List<CardEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertCard(card: CardEntity)
+    @Upsert suspend fun upsertCard(card: CardEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertSchedule(state: SchedulingEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertLog(log: ReviewLogEntity)
     @Query("SELECT * FROM review_logs WHERE cardId = :cardId ORDER BY reviewedAt DESC") suspend fun logs(cardId: String): List<ReviewLogEntity>
     @Query("SELECT * FROM review_logs ORDER BY reviewedAt") suspend fun allLogs(): List<ReviewLogEntity>
     @Query("DELETE FROM review_logs WHERE id = :id") suspend fun deleteLog(id: String)
     @Query("SELECT * FROM folders WHERE deletedAt IS NULL ORDER BY parentId, position, name") fun observeFolders(): Flow<List<FolderEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertFolder(folder: FolderEntity)
+    @Upsert suspend fun upsertFolder(folder: FolderEntity)
     @Query("SELECT * FROM folders WHERE id = :id") suspend fun folder(id: String): FolderEntity?
     @Query("UPDATE folders SET name=:name, updatedAt=:at, revision=revision+1 WHERE id=:id") suspend fun renameFolder(id: String, name: String, at: Long)
     @Query("UPDATE folders SET parentId=:parentId, updatedAt=:at, revision=revision+1 WHERE id=:id") suspend fun moveFolder(id: String, parentId: String?, at: Long)
@@ -51,9 +52,9 @@ interface RepDawnDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertTombstone(tombstone: TombstoneEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertMixture(word: MixtureWordEntity)
     @Query("SELECT * FROM mixture_words WHERE deletedAt IS NULL ORDER BY createdAt DESC") fun observeMixture(): Flow<List<MixtureWordEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertSentence(sentence: GeneratedSentenceEntity)
+    @Upsert suspend fun upsertSentence(sentence: GeneratedSentenceEntity)
     @Query("SELECT * FROM generated_sentences WHERE deletedAt IS NULL ORDER BY createdAt DESC") fun observeSentences(): Flow<List<GeneratedSentenceEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertIdiom(idiom: IdiomEntity)
+    @Upsert suspend fun upsertIdiom(idiom: IdiomEntity)
     @Query("SELECT * FROM idioms WHERE deletedAt IS NULL ORDER BY createdLocalDate DESC") fun observeIdioms(): Flow<List<IdiomEntity>>
     @Query("SELECT * FROM cards") suspend fun backupCards(): List<CardEntity>
     @Query("SELECT * FROM folders") suspend fun backupFolders(): List<FolderEntity>

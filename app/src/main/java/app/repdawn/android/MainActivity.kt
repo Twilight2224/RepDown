@@ -88,7 +88,116 @@ private enum class Destination(val label: String) { HOME("Home"), STUDY("Study")
 }
 @Composable private fun Details(card: CardEntity) { listOfNotNull(card.article?.let { "Article: $it" }, card.plural?.let { "Plural: $it" }, card.partOfSpeech?.let { "Part of speech: $it" }, card.conjugation?.let { "Conjugation: $it" }, card.notes?.let { "Notes: $it" }).forEach { Text(it) } }
 
-@Composable private fun Folders(vm: AppViewModel, add: () -> Unit) { val folders by vm.folders.collectAsState(); var name by remember { mutableStateOf("") }; var parent by remember { mutableStateOf<String?>(null) }; LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { item { Text("Folders", style = MaterialTheme.typography.headlineSmall); Text("Create nested folders or move cards out before deleting a folder.") }; item { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("New folder") }, modifier = Modifier.fillMaxWidth()) }; item { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { AssistChip(onClick = { parent = null }, label = { Text("Top level") }); folders.take(4).forEach { f -> AssistChip(onClick = { parent = f.id }, label = { Text("Inside ${f.name}") }) }; Button(onClick = { vm.addFolder(name, parent); name = "" }) { Text("Add") } } }; items(folders, key = { it.id }) { f -> var edit by remember(f.id) { mutableStateOf(false) }; var rename by remember(f.id) { mutableStateOf(f.name) }; ElevatedCard { if(edit) Row(Modifier.padding(10.dp)) { OutlinedTextField(rename, { rename = it }, modifier = Modifier.weight(1f)); TextButton(onClick = { vm.renameFolder(f.id, rename); edit = false }) { Text("Save") } } else Row(Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("${if (f.parentId != null) "↳ " else ""}${f.name}"); Row { TextButton(onClick = { edit = true }) { Text("Rename") }; TextButton(onClick = { vm.deleteFolderMoveCards(f.id, f.parentId) }) { Text("Delete") } } } } } }; item { Button(onClick = add) { Text("Add a card") } } } }
+
+@Composable
+private fun Folders(vm: AppViewModel, add: () -> Unit) {
+    val folders by vm.folders.collectAsState()
+    var name by remember { mutableStateOf("") }
+    var parent by remember { mutableStateOf<String?>(null) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text("Folders", style = MaterialTheme.typography.headlineSmall)
+            Text("Create nested folders or move cards out before deleting a folder.")
+        }
+
+        item {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("New folder") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AssistChip(
+                    onClick = { parent = null },
+                    label = { Text("Top level") }
+                )
+
+                folders.take(4).forEach { folder ->
+                    AssistChip(
+                        onClick = { parent = folder.id },
+                        label = { Text("Inside ${folder.name}") }
+                    )
+                }
+
+                Button(onClick = {
+                    vm.addFolder(name, parent)
+                    name = ""
+                }) {
+                    Text("Add")
+                }
+            }
+        }
+
+        items(folders, key = { it.id }) { folder ->
+            var editing by remember(folder.id) {
+                mutableStateOf(false)
+            }
+            var renamed by remember(folder.id) {
+                mutableStateOf(folder.name)
+            }
+
+            ElevatedCard {
+                if (editing) {
+                    Row(Modifier.padding(10.dp)) {
+                        OutlinedTextField(
+                            value = renamed,
+                            onValueChange = { renamed = it },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+
+                        TextButton(onClick = {
+                            vm.renameFolder(folder.id, renamed)
+                            editing = false
+                        }) {
+                            Text("Save")
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "${if (folder.parentId != null) "↳ " else ""}${folder.name}"
+                        )
+
+                        Row {
+                            TextButton(onClick = {
+                                editing = true
+                            }) {
+                                Text("Rename")
+                            }
+
+                            TextButton(onClick = {
+                                vm.deleteFolderMoveCards(
+                                    folder.id,
+                                    folder.parentId
+                                )
+                            }) {
+                                Text("Delete")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Button(onClick = add) {
+                Text("Add a card")
+            }
+        }
+    }
+}
 @Composable private fun Editor(vm: AppViewModel, editId: String?, onDone: () -> Unit) { val cards by vm.cards.collectAsState(); val existing = cards.firstOrNull { it.id == editId }; var draft by remember(editId, existing?.updatedAt) { mutableStateOf(existing?.toDraft() ?: CardDraft()) }; val folders by vm.folders.collectAsState(); LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { item { Text(if (editId == null) "New flashcard" else "Edit flashcard", style = MaterialTheme.typography.headlineSmall); Text("German is required. Incomplete cards are saved as drafts.") }; item { Field("German *", draft.german) { draft = draft.copy(german = it) } }; item { Field("Hint / synonym", draft.hint) { draft = draft.copy(hint = it) } }; item { Field("English translation", draft.english) { draft = draft.copy(english = it) } }; item { Field("English definition", draft.definition, multi = true) { draft = draft.copy(definition = it) } }; item { Field("Example 1 — German", draft.exampleGerman1, true) { draft = draft.copy(exampleGerman1 = it) } }; item { Field("Example 1 — English", draft.exampleEnglish1, true) { draft = draft.copy(exampleEnglish1 = it) } }; item { Field("Example 2 — German", draft.exampleGerman2, true) { draft = draft.copy(exampleGerman2 = it) } }; item { Field("Example 2 — English", draft.exampleEnglish2, true) { draft = draft.copy(exampleEnglish2 = it) } }; item { Field("Notes", draft.notes, true) { draft = draft.copy(notes = it) } }; item { Field("Article", draft.article) { draft = draft.copy(article = it) } }; item { Field("Plural / inflection", draft.plural) { draft = draft.copy(plural = it) } }; item { Field("Part of speech", draft.partOfSpeech) { draft = draft.copy(partOfSpeech = it) } }; item { Field("Conjugation", draft.conjugation) { draft = draft.copy(conjugation = it) } }; item { Text("Folder: ${folders.firstOrNull { it.id == draft.folderId }?.name ?: "None"}"); Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { folders.take(4).forEach { f -> AssistChip(onClick = { draft = draft.copy(folderId = f.id) }, label = { Text(f.name) }) } } }; item { Button(onClick = { vm.save(draft, editId, onDone) }, enabled = draft.german.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Save locally") } }; if(editId != null) item { OutlinedButton(onClick = { vm.trash(editId); onDone() }, modifier = Modifier.fillMaxWidth()) { Text("Move to Trash") } } } }
 @Composable private fun Field(label: String, value: String, multi: Boolean = false, update: (String) -> Unit) = OutlinedTextField(value = value, onValueChange = update, label = { Text(label) }, modifier = Modifier.fillMaxWidth(), minLines = if (multi) 2 else 1, maxLines = if (multi) 5 else 1)
 @Composable private fun Practice(vm: AppViewModel) { val sentences by vm.sentences.collectAsState(); val idioms by vm.idioms.collectAsState(); LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { item { Text("Practice", style = MaterialTheme.typography.headlineSmall); Text("Cached sentence and idiom exercises work offline. Generation requires configured Wi‑Fi service.") }; item { Text("Sentences: ${sentences.size}", style = MaterialTheme.typography.titleMedium) }; items(sentences.take(5)) { Text(it.english) }; item { Text("Idioms: ${idioms.size}", style = MaterialTheme.typography.titleMedium) }; items(idioms.take(5)) { ElevatedCard { Column(Modifier.padding(12.dp)) { Text(it.german, style = MaterialTheme.typography.titleMedium); Text(it.naturalEnglish) } } } } }

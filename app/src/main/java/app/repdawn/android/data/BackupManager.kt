@@ -41,7 +41,20 @@ class BackupManager(private val db: RepDawnDatabase) {
         val parsedCards = (0 until cards.length()).map { cards.getJSONObject(it).card() }
         val parsedSchedules = (0 until schedules.length()).map { schedules.getJSONObject(it).schedule() }
         val parsedLogs = (0 until logs.length()).map { logs.getJSONObject(it).log() }
-        db.withTransaction {     for (folder in parsedFolders) {         dao.upsertFolder(folder)     }      for (card in parsedCards) {         dao.upsertCard(card)     }      for (schedule in parsedSchedules) {         dao.upsertSchedule(schedule)     }      for (log in parsedLogs) {         dao.insertLog(log)     } }
+        db.withTransaction {
+            for (folder in parsedFolders) {
+                dao.upsertFolder(folder)
+            }
+            for (card in parsedCards) {
+                dao.upsertCard(card)
+            }
+            for (schedule in parsedSchedules) {
+                dao.upsertSchedule(schedule)
+            }
+            for (log in parsedLogs) {
+                dao.insertLog(log)
+            }
+        }
     }
 }
 private fun FolderEntity.json() = JSONObject(mapOf("id" to id, "name" to name, "parentId" to parentId, "position" to position, "createdAt" to createdAt, "updatedAt" to updatedAt, "deletedAt" to deletedAt, "revision" to revision))

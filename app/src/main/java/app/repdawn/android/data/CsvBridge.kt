@@ -35,7 +35,7 @@ class CsvBridge(private val db: RepDawnDatabase) {
             ?: error("The selected file could not be opened.")
     }
 
-    suspend fun import(resolver: ContentResolver, uri: Uri) {
+    suspend fun importCsv(resolver: ContentResolver, uri: Uri) {
         val raw = resolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
             ?: error("The selected file could not be opened.")
         val rows = parseCsv(raw.removePrefix("\uFEFF"))

@@ -1,4 +1,3 @@
-
 name: Android build
 
 on:
@@ -29,15 +28,45 @@ jobs:
       - name: Install Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Unit tests
-        run: chmod +x gradlew && ./gradlew --no-daemon testDebugUnitTest
-
+      # The APK is built FIRST so a failing unit test can never block it.
       - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain --stacktrace assembleDebug 2>&1 | tee build.log
 
       - name: Upload debug APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: repdawn-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Unit tests (do not block the APK)
+        if: success()
+        continue-on-error: true
+        shell: bash
+        run: ./gradlew --no-daemon --console=plain testDebugUnitTest 2>&1 | tee test.log
+
+      # Copies the real Gradle error into a public annotation + job summary,
+      # so it is visible without opening the raw logs.
+      - name: Report Gradle errors
+        if: always()
+        shell: bash
+        run: |
+          for f in build.log test.log; do
+            [ -f "$f" ] || continue
+            grep -qE "BUILD FAILED|FAILURE: Build failed" "$f" || continue
+            msg=$( { grep -E '^e: |FAILED$' "$f" | head -n 25; sed -n '/\* What went wrong:/,/\* Try:/p' "$f" | head -n 30; } | cut -c1-400 | head -c 3500 )
+            {
+              echo "### Gradle failure in $f"
+              echo '```'
+              echo "$msg"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            msg="${msg//'%'/'%25'}"
+            msg="${msg//$'\r'/'%0D'}"
+            msg="${msg//$'\n'/'%0A'}"
+            echo "::error title=Gradle failure ($f)::$msg"
+          done

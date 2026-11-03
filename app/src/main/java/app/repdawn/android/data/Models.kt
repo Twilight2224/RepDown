@@ -43,9 +43,9 @@ data class CardEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null,
     val revision: Long = 1
-) {
-    val complete get() = !english.isNullOrBlank() && !definition.isNullOrBlank()
-}
+)
+
+val CardEntity.complete: Boolean get() = !english.isNullOrBlank() && !definition.isNullOrBlank()
 
 @Entity(tableName = "tags") data class TagEntity(@PrimaryKey val id: String = newId(), val name: String, val normalizedName: String = name.lowercase())
 @Entity(tableName = "card_tags", primaryKeys = ["cardId", "tagId"], foreignKeys = [ForeignKey(entity = CardEntity::class, parentColumns = ["id"], childColumns = ["cardId"], onDelete = ForeignKey.CASCADE), ForeignKey(entity = TagEntity::class, parentColumns = ["id"], childColumns = ["tagId"], onDelete = ForeignKey.CASCADE)], indices = [Index("tagId")]) data class CardTagEntity(val cardId: String, val tagId: String)
